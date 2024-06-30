@@ -1,0 +1,10 @@
+{
+    "total_size": "7.10 GB",
+    "average_size": "7.12 MB",
+    "size_distribution": {
+        "1MB-10MB": 788,
+        "10MB-100MB": 180,
+        "100KB-1MB": 51,
+        "10KB-100KB": 1
+    }
+}

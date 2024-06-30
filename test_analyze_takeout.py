@@ -1,7 +1,7 @@
 import os
 import json
 import pytest
-from analyzer import AnalyzeTakeout
+from analyze_takeout import AnalyzeTakeout
 
 @pytest.fixture
 def setup_environment(tmp_path):

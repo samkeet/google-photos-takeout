@@ -1,1 +1,1 @@
-exiftool==12.29.0
+PyExifTool==0.5.6

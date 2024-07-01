@@ -2,7 +2,7 @@
 
 A project where I want to analyze, organize and cleanup my Google Photos Takeout exports worth 200+ Gigs
 
-## Analyzer Takeout
+## Analyze Takeout
 
 Analyze the photos and media for valid media files who extensions are defined in the config.ini. Helps understanding how many files are non media files and how to accommodate them if required
 

@@ -3,6 +3,7 @@ import shutil
 import sys
 import configparser
 import logging
+import json
 from datetime import datetime
 from exiftool import ExifToolHelper
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,21 +12,34 @@ import argparse
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+datetime_tags = ['EXIF:DateTimeOriginal', 'EXIF:CreateDate', 'EXIF:ModifyDate', 'EXIF:DateTimeDigitized', 'QuickTime:CreateDate', 'ICC_Profile:ProfileDateTime']
+
 class OrganizeTakeout:
     def __init__(self, config_path):
         self.config = configparser.ConfigParser()
         self.config.read(config_path)
-        self.photo_extensions = tuple(self.config.get('extensions', 'PICTURE_EXTENSIONS').split(', '))
-        self.video_extensions = tuple(self.config.get('extensions', 'VIDEO_EXTENSIONS').split(', '))
+        self.photo_extensions = tuple(self.config.get('Extensions', 'PICTURE_EXTENSIONS').split(', '))
+        self.video_extensions = tuple(self.config.get('Extensions', 'VIDEO_EXTENSIONS').split(', '))
+        self.files_without_datetime = []  # List to store filenames without datetime
 
     def get_photo_date(self, file_path):
         """Get the date the photo was taken using ExifToolHelper."""
         with ExifToolHelper() as et:
-            metadata = et.get_tags(files=[file_path], tags=['EXIF:DateTimeOriginal'])
-            if metadata and 'EXIF:DateTimeOriginal' in metadata[0]:
-                date_str = metadata[0]['EXIF:DateTimeOriginal']
-                return datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            metadata = et.get_tags(files=[file_path], tags=datetime_tags)
+            for tag in datetime_tags:
+                if tag in metadata[0]:
+                    date_str = metadata[0][tag]
+                    logging.info(f"DateTime for {file_path}: {date_str}")
+                    return datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            logging.info(f"No DateTime found for {file_path}")
+            self.files_without_datetime.append(file_path)  # Add to list if no datetime found
         return None
+
+    def export_to_json(self, filename='files_without_datetime.json'):
+        """Exports filenames without datetime to a JSON file."""
+        with open(filename, 'w') as f:
+            json.dump(self.files_without_datetime, f, indent=4)
+        logging.info(f"Exported filenames without datetime to {filename}")
 
     def process_file(self, file_path, destination_folder):
         """Process a single file by moving it to the appropriate folder based on its date."""
@@ -41,7 +55,6 @@ class OrganizeTakeout:
             
             if not os.path.exists(target_folder):
                 os.makedirs(target_folder)
-            
             shutil.move(file_path, os.path.join(target_folder, os.path.basename(file_path)))
             logging.info(f"Moved {file_path} to {target_folder}")
         except Exception as e:
@@ -62,6 +75,7 @@ class OrganizeTakeout:
                     future.result()
                 except Exception as e:
                     logging.error(f"Error in future execution: {e}")
+        self.export_to_json()  # Export files without datetime after processing
 
 def main():
     parser = argparse.ArgumentParser(description="Organize photos by year, month, and day based on EXIF data.")
